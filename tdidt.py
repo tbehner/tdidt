@@ -5,6 +5,36 @@ import random
 import math
 import copy
 
+class SplittingTest:
+    """
+    Test for splitting a TDIDTNode
+    """
+    def __init__(self,test,attribute,attribute_type,split_value):
+        self.test = test
+        self.attribute = attribute
+        self.attribute_type = attribute_type
+        self.split_value = split_value
+
+    def __str__(self):
+        """
+        In dependence of the type of the attribute
+        different strings are returned to fullfill the required
+        output style
+        """
+
+        if attribute_type == "n":
+            return format("a < {}",self.split_value)
+        elif: attribute_type == "c":
+            return format("a is contained in {}", self.split_value)
+        else:
+            return "a is true"
+
+    def __call__(self,value):
+        """
+        Can be called as a function, returns the boolean value of the test
+        """
+        return self.test(value)
+
 # Example class 
 # corresponds to one line in the input file
 class Example:
@@ -169,11 +199,30 @@ class ExampleSet:
         return [max_information_gain,splitting_test]
 
 
+    def split_boolean(self,attribute):
+        """
+        compute the information_gain and splitting test according to the boolean attribute ``attribute``
+        """
+        passing = [0,0]
+        failing = [self.positives,self.negatives]
+        for example in self.examples:
+            if example.example_hash[attribute]:
+                if example.outcome:
+                    passing[0] += 1
+                else:
+                    passing[1] += 1
+        failing[0] -= passing[0]
+        failing[1] -= passing[1]
+        information_gain = get_information_gain(passing[0],passing[1],failing[0],failing[1])
+        test = lambda x : x
+        return [information_gain,test]
 
-    def best_split(self,attribute):
+
+    def get_split(self,attribute):
         """
         Computes the best splitting test for the given attribute. This method is a wrapper for the 
-        methods ``best_split_numerical`` and ``best_split_categorical``.
+        methods ``best_split_numerical`` , ``best_split_categorical`` and ``split_boolean``
+        In either case is the running time linear with respect to the number of examples
         """
         max_information_gain = None
         splitting_test       = None
@@ -181,8 +230,9 @@ class ExampleSet:
             [max_information_gain,splitting_test] = best_split_numerical(attribute)     
         elif self.attributes[attribute] == 'c': # find the best split for categorical attributes
             [max_information_gain,splitting_test] = best_split_categorical(attribute)     
+        else: # there is only boolean values left which have only one possible splitting test
+            [max_information_gain,splitting_test] = split_boolean(attribute)
         return [max_information_gain,splitting_test]
-        
 
 
     def get_test_instances(self,quantity):
@@ -198,8 +248,9 @@ class ExampleSet:
 
         return test_examples
 
+class TDIDTNode:
+    def __init__(self,example_set):
+        self.example_set = example_set
 
 
-test = ExampleSet()
-test.initialize_from_file(sys.argv[1])
-print(test.best_split("b"))
+
