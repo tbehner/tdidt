@@ -24,7 +24,7 @@ class SplittingTest:
 
         if attribute_type == "n":
             return format("a < {}",self.split_value)
-        elif: attribute_type == "c":
+        elif attribute_type == "c":
             return format("a is contained in {}", self.split_value)
         else:
             return "a is true"
