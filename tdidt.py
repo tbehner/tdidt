@@ -172,7 +172,7 @@ class ExampleSet:
             npos = self.positives - ppos
             nneg = self.negatives - pneg
             information_gain[value] = get_information_gain(ppos,pneg,npos,nneg)
-            
+
 
         # sort the values of the attribute descending after their information gain
         sorted_values = sorted(information_gain.keys(),key=lambda x : information_gain[x],reverse=True)
@@ -248,9 +248,87 @@ class ExampleSet:
 
         return test_examples
 
+
 class TDIDTNode:
-    def __init__(self,example_set):
-        self.example_set = example_set
+    def __init__(self,example_set,parent_idx=None,left_child_idx=None,right_child_idx):
+        self.example_set     = example_set
+        self.parent_idx      = parent_idx
+        self.left_child_idx  = left_child_idx
+        self.right_child_idx = right_child_idx
+        self.is_leaf         = False
+        self.outcome         = None
 
+    def setParent(self,idx):
+        self.parent_idx = idx
 
+    def setLeftChild(self,idx):
+        self.left_child_idx = idx
 
+    def setLeftChild(self,idx):
+        self.right_child_idx = idx
+
+def TDIDT(node_list,attribute_list,current_node_idx):
+    current_node = node_list[current_node_idx]
+
+    # if the current node has only true or false example outcomes
+    # it is perfectly classified and we can return
+    if current_node.example_set.positives == 0 and current_node.example_set.negatives > 0:
+        current_node.leaf    = True
+        current_node.outcome = False
+
+    if current_node.example_set.positives > 0 and current_node.example_set.negatives == 0:
+        current_node.leaf    = True
+        current_node.outcome = True
+
+    # if no attriubute is left to classify the data we considere
+    # the node to be classified with the majorit of outcomes
+    if not attribute_list:
+        current_node.leaf = True
+        current_node.outcome = (current_node.example_set.positives > current_node.example_set.negatives)
+
+    # if there are no examples left, then use the majority of the parent node
+    if not current_node.example_set.examples:
+        parent_node = node_list[current_node.parent_idx]
+        if parent_node.example_set.positives == 0 and parent_node.example_set.negatives > 0:
+            current_node.leaf    = True
+            current_node.outcome = False
+
+        if parent_node.example_set.positives > 0 and parent_node.example_set.negatives == 0:
+            current_node.leaf    = True
+            current_node.outcome = True
+
+    # now there is certenly something left to be classified
+    # calculate the information gain of every attribute
+    max_information_gain = None
+    splitting_test       = None
+    for attribute in attribute_list:
+        information_gain , test = current_node.example_set.get_split(attribute)
+        if information_gain > max_information_gain:
+            max_information_gain = information
+            splitting_test       = test
+
+    # split the example set with the given test with the maximum information gain
+
+    # remove the attribute from the list of possible attributes
+
+    # make decision tree nodes for each new example set
+    # and invoke TDIDT on each node
+
+def TDIDT:
+    #if the current node has only true or false example outcomes
+    #it is perfectly classified and we can return
+
+    # if no attriubute is left to classify the data we considere
+    # the node to be classified with the majorit of outcomes
+
+    # if there are no examples left, then use the majority of the parent node
+
+    # now there is certenly something left to be classified
+    # calculate the information gain of every attribute
+
+    # split the example set with the given test with the maximum information gain
+
+    # remove the attribute from the list of possible attributes
+
+    # make decision tree nodes for each new example set
+    # and invoke TDIDT on each node
