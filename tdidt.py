@@ -83,6 +83,8 @@ class ExampleSet:
     """
     def __init__(self,examples = []):
         self.examples = []
+        self.positives = 0
+        self.negatives = 0
 
     def initialize_from_file(self,filename):
         input_file = open(filename,'r')
@@ -99,7 +101,7 @@ class ExampleSet:
         self.positives = 0
         self.negatives = 0
         for line in input_file:
-            example_list = list(map(lambda s : s.rstrip() , line.split(',')))
+           example_list = list(map(lambda s : s.rstrip() , line.split(',')))
             # FIXME IOOUUUUU there has to be a way which is prettier than this
             example_hash = dict(zip(sorted(self.attributes),example_list))
             for key in example_hash.keys(): # convert all numerical values from str to float
@@ -248,6 +250,25 @@ class ExampleSet:
 
         return test_examples
 
+    def split(self,test):
+        succeeding_example_set = []
+        failing_example_set = []
+
+        for example in self.examples:
+            if test(example):
+                succeeding_example_set.examples.push(example)
+                if example.outcome:
+                    succeeding_example_set.positives += 1
+                else:
+                    succeeding_example_set.negatives += 1
+            else:
+                failing_example_set.examples.push(example)
+                if example.outcome:
+                    failing_example_set.positives += 1
+                else:
+                    failing_example_set.negatives += 1
+        return [succeeding_example_set, failing_example_set]
+
 
 class TDIDTNode:
     def __init__(self,example_set,parent_idx=None,left_child_idx=None,right_child_idx):
@@ -308,27 +329,22 @@ def TDIDT(node_list,attribute_list,current_node_idx):
             splitting_test       = test
 
     # split the example set with the given test with the maximum information gain
+    succeeding_example_set , failing_example_set = current_node.example_set.split(splitting_test)
 
     # remove the attribute from the list of possible attributes
+    next_attribute_list = copy.deepcopy(attribute_list)
+    next_attribute_list.remove(test.attribute)
 
     # make decision tree nodes for each new example set
+    left_node = TDIDTNode(succeeding_example_set,current_node_idx)
+    right_node = TDIDTNode(failing_example_set,current_node_idx)
+
+    left_node_idx = len(node_list)
+    right_node_idx = len(node_list)+1
+    node_list.push(left_node)
+    node_list.push(right_node)
+
     # and invoke TDIDT on each node
+    TDIDT(node_list,next_attribute_list,left_node_idx)
+    TDIDT(node_list,next_attribute_list,right_node_idx)
 
-def TDIDT:
-    #if the current node has only true or false example outcomes
-    #it is perfectly classified and we can return
-
-    # if no attriubute is left to classify the data we considere
-    # the node to be classified with the majorit of outcomes
-
-    # if there are no examples left, then use the majority of the parent node
-
-    # now there is certenly something left to be classified
-    # calculate the information gain of every attribute
-
-    # split the example set with the given test with the maximum information gain
-
-    # remove the attribute from the list of possible attributes
-
-    # make decision tree nodes for each new example set
-    # and invoke TDIDT on each node
