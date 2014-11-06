@@ -49,12 +49,10 @@ def get_information_gain(ppos, pneg, npos, nneg):
     """
     compute the information gain given with the four parameters
     """
-#    print("Ppos: {}, Pneg: {}, Npos: {}, Nneg: {}".format(ppos,pneg,npos,nneg))
+    print("Ppos: {}, Pneg: {}, Npos: {}, Nneg: {}".format(ppos,pneg,npos,nneg))
     total = float(ppos + pneg + npos + nneg)
     p_total = float(ppos + pneg)
     n_total = float(npos + nneg)
-    if total == 0:
-        return 0
     information_gain = entropy((ppos+npos)/total,(pneg + nneg)/total)
     if p_total > 0:
         information_gain -= p_total/total * entropy(ppos/p_total,pneg/p_total)
@@ -294,6 +292,9 @@ class TDIDTNode:
         self.is_leaf         = False
         self.test            = None
         self.outcome         = None
+        # only needed to fullfill exercise requirements
+        self.identifier      = None
+        self.parent_test_outcome = None
 
     def setParent(self,idx):
         self.parent_idx = idx
@@ -305,7 +306,7 @@ class TDIDTNode:
         self.right_child_idx = idx
 
     def __str__(self):
-        return "{} {} {} {} {}".format(self.left_child_idx, self.right_child_idx, self.is_leaf, self.outcome, self.test)
+        return "{} {} {} {} {}".format(self.identifier,self.parent_test_outcome,self.test,self.left_child_idx,self.right_child_idx)
 
 def TDIDT(node_list,attribute_list,current_node_idx):
     current_node = node_list[current_node_idx]
@@ -330,17 +331,13 @@ def TDIDT(node_list,attribute_list,current_node_idx):
         return
 
     # if there are no examples left, then use the majority of the parent node
-    if not current_node.example_set.examples:
+    if len(current_node.example_set.examples) == 0:
+        current_node.is_leaf = True
         parent_node = node_list[current_node.parent_idx]
-        if parent_node.example_set.positives == 0 and parent_node.example_set.negatives > 0:
-            current_node.is_leaf    = True
-            current_node.outcome = False
-            return
+        current_node.outcome = (parent_node.example_set.positives >= parent_node.example_set.negatives)
+        return
 
-        if parent_node.example_set.positives > 0 and parent_node.example_set.negatives == 0:
-            current_node.is_leaf    = True
-            current_node.outcome = True
-            return
+    print("Lengt: {}, Sum of pos and neg: {}".format(len(current_node.example_set.examples),current_node.example_set.positives + current_node.example_set.negatives))
 
     # now there is certenly something left to be classified
     # calculate the information gain of every attribute
@@ -348,11 +345,13 @@ def TDIDT(node_list,attribute_list,current_node_idx):
     splitting_test       = None
     for attribute in attribute_list:
         information_gain , test = current_node.example_set.get_split(attribute)
-        #print("Information gain: {}, Test: {}".format(information_gain,test))
+        # only needed to fullfill the exercise requirements
+        print("Information gain: {}, Test: {}".format(information_gain,test))
         if max_information_gain is None or information_gain > max_information_gain:
             max_information_gain = information_gain
             splitting_test       = test
-    #print("Maximum Information gain {}, Test {}".format(max_information_gain,splitting_test))
+    # only needed to fullfill the exercise requirements
+    print("Maximum Information gain {}, Test {}".format(max_information_gain,splitting_test))
 
     # split the example set with the given test with the maximum information gain
     succeeding_example_set , failing_example_set = current_node.example_set.split(splitting_test)
@@ -369,6 +368,13 @@ def TDIDT(node_list,attribute_list,current_node_idx):
 
     current_node.left_child_idx = len(node_list)
     current_node.right_child_idx = len(node_list)+1
+
+    # only needed to fullfill exercise requirements
+    left_node.identifier = current_node.left_child_idx
+    right_node.identifier = current_node.right_child_idx
+    left_node.parent_test_outcome = "yes"
+    right_node.parent_test_outcome = "no"
+
     node_list.append(left_node)
     node_list.append(right_node)
 
@@ -393,16 +399,16 @@ node_list = [TDIDTNode(e)]
 attribute_list = list(e.attributes.keys())
 TDIDT(node_list,attribute_list,0)
 
+for node in node_list:
+    print(node)
 
 correct_classified = 0
 wrong_classified = 0
 
 for example in test_set.examples:
     if classify(example,node_list) == example.outcome:
-        print("Correct!")
         correct_classified += 1
     else:
-        print("Wrong...")
         wrong_classified += 1
 
-print("Rate: {}".format(wrong_classified/float(len(test_set.examples))))
+print("Success rate: {:.2%}".format(correct_classified/float(len(test_set.examples))))
