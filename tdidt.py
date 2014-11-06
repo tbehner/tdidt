@@ -35,9 +35,10 @@ class SplittingTest:
         """
         return self.test(value)
 
-# Example class 
-# corresponds to one line in the input file
 class Example:
+    """
+    example for the training with tdidt
+    """
     def __init__(self,attribute_hash,outcome):
         self.attribute_hash = attribute_hash
         self.outcome = outcome
@@ -48,6 +49,10 @@ class Example:
 def get_information_gain(ppos, pneg, npos, nneg):
     """
     compute the information gain given with the four parameters
+    :param ppos: number of positive examples with outcome "yes"
+    :param pneg: number of positive examples with outcome "no"
+    :param npos: number of negative examples with outcome "yes"
+    :param nneg: number of negative examples with outcome "no"
     """
     print("Ppos: {}, Pneg: {}, Npos: {}, Nneg: {}".format(ppos,pneg,npos,nneg))
     total = float(ppos + pneg + npos + nneg)
@@ -90,6 +95,9 @@ class ExampleSet:
         self.negatives = 0
 
     def initialize_from_file(self,filename):
+        """
+        initialize this example set from a file as specified by the exercise
+        """
         input_file = open(filename,'r')
 
         # read the first line with attributes 
@@ -142,17 +150,12 @@ class ExampleSet:
                 failing_examples[1] -= 1
                 passing_examples[1] += 1
             if not self.examples[i_idx].outcome == self.examples[i_idx+1].outcome:              # update distribution of outcomes
-                # information gain
                 current_information_gain = get_information_gain(passing_examples[0],passing_examples[1],failing_examples[0],failing_examples[1])
-
                 if max_information_gain is None or max_information_gain < current_information_gain:
                     max_information_gain = current_information_gain
                     mean = (self.examples[i_idx].attribute_hash[attribute] + self.examples[i_idx+1].attribute_hash[attribute])/2
                     split_value = mean
-                    # FIXME if the code should brake, I should consider this line as the problem
                     splitting_test = lambda x : x.attribute_hash[attribute] < split_value
-        if max_information_gain is None:
-            max_information_gain = 0
         return [max_information_gain,SplittingTest(splitting_test,attribute,"n",split_value)]
 
     def best_split_categorical(self,attribute):
@@ -261,6 +264,10 @@ class ExampleSet:
         return test_examples
 
     def split(self,test):
+        """
+        Split the example_set in examples which fullfill the test and those which do not fullfill the test.
+        Two example sets are returned. The first one containes the examples which fullfill the test.
+        """
         succeeding_example_set = ExampleSet()
         failing_example_set = ExampleSet()
 
@@ -284,6 +291,9 @@ class ExampleSet:
 
 
 class TDIDTNode:
+    """
+    a node in a decision tree as used by TDIDT
+    """
     def __init__(self,example_set,parent_idx=None,left_child_idx=None,right_child_idx=None):
         self.example_set     = example_set
         self.parent_idx      = parent_idx
@@ -309,6 +319,13 @@ class TDIDTNode:
         return "{} {} {} {} {}".format(self.identifier,self.parent_test_outcome,self.test,self.left_child_idx,self.right_child_idx)
 
 def TDIDT(node_list,attribute_list,current_node_idx):
+    """
+    TDIDT algorithm for learning a decision tree given the examples contained in the root node
+
+    :param node_list: list of nodes in the decision tree
+    :param attribute_list: list of attributes not yet used on the current path to the root
+    :param current_node_idx: index of the node which should be considered
+    """
     current_node = node_list[current_node_idx]
 
     # if the current node has only true or false example outcomes
@@ -382,7 +399,11 @@ def TDIDT(node_list,attribute_list,current_node_idx):
     TDIDT(node_list,next_attribute_list,current_node.left_child_idx)
     TDIDT(node_list,next_attribute_list,current_node.right_child_idx)
 
+
 def classify(example,node_list):
+    """
+    traverses with the given example the decision tree and returns the outcome
+    """
     current_node = node_list[0]
     while not current_node.is_leaf:
         if current_node.test(example):
@@ -391,24 +412,35 @@ def classify(example,node_list):
             current_node = node_list[current_node.right_child_idx]
     return current_node.outcome
 
+
+if len(sys.argv) != 2:
+    print("Usage {} FILENAME".format(sys.argv[0]))
+    sys.exit(1)
+
+# create Example Set from given file
 e = ExampleSet()
 e.initialize_from_file(sys.argv[1])
+
+# get a third of the examples for testing
 test_set = e.get_test_instances(int((1.0/3)*len(e.examples)))
 
+# run TDIDT
 node_list = [TDIDTNode(e)]
 attribute_list = list(e.attributes.keys())
 TDIDT(node_list,attribute_list,0)
 
+# print all nodes created by TDIDT
 for node in node_list:
     print(node)
 
+# classify the test examples and cound how many were corretly classified
 correct_classified = 0
 wrong_classified = 0
-
 for example in test_set.examples:
     if classify(example,node_list) == example.outcome:
         correct_classified += 1
     else:
         wrong_classified += 1
 
+# print the success rate
 print("Success rate: {:.2%}".format(correct_classified/float(len(test_set.examples))))
