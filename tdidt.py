@@ -393,7 +393,7 @@ def classify(example,node_list):
 
 e = ExampleSet()
 e.initialize_from_file(sys.argv[1])
-test_set = e.get_test_instances(int((float(2)/3)*len(e.examples)))
+test_set = e.get_test_instances(int((1.0/3)*len(e.examples)))
 
 node_list = [TDIDTNode(e)]
 attribute_list = list(e.attributes.keys())
