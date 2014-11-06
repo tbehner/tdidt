@@ -22,12 +22,12 @@ class SplittingTest:
         output style
         """
 
-        if attribute_type == "n":
-            return format("a < {}",self.split_value)
-        elif attribute_type == "c":
-            return format("a is contained in {}", self.split_value)
+        if self.attribute_type == "n":
+            return "{} < {}".format(self.attribute, self.split_value)
+        elif self.attribute_type == "c":
+            return "{} is contained in {}".format(self.attribute,self.split_value)
         else:
-            return "a is true"
+            return "{} is true".format(self.attribute)
 
     def __call__(self,value):
         """
@@ -227,7 +227,9 @@ class ExampleSet:
         failing[1] -= passing[1]
         information_gain = get_information_gain(passing[0],passing[1],failing[0],failing[1])
         test = lambda e : e.attribute_hash[attribute]
-        return [information_gain,SplittingTest(test,attribute,"b",True)]
+        splitting_test = SplittingTest(test,attribute,"b",True)
+        #print("Information gain: {}, splitting test: {}".format(information_gain,splitting_test))
+        return [information_gain,splitting_test]
 
 
     def get_split(self,attribute):
@@ -290,6 +292,7 @@ class TDIDTNode:
         self.left_child_idx  = left_child_idx
         self.right_child_idx = right_child_idx
         self.is_leaf         = False
+        self.test            = None
         self.outcome         = None
 
     def setParent(self,idx):
@@ -301,45 +304,42 @@ class TDIDTNode:
     def setLeftChild(self,idx):
         self.right_child_idx = idx
 
+    def __str__(self):
+        return "{} {} {} {} {}".format(self.left_child_idx, self.right_child_idx, self.is_leaf, self.outcome, self.test)
+
 def TDIDT(node_list,attribute_list,current_node_idx):
     current_node = node_list[current_node_idx]
 
     # if the current node has only true or false example outcomes
     # it is perfectly classified and we can return
     if current_node.example_set.positives == 0 and current_node.example_set.negatives > 0:
-        current_node.leaf    = True
+        current_node.is_leaf    = True
         current_node.outcome = False
-        print("Perfectly classified False")
         return
 
     if current_node.example_set.positives > 0 and current_node.example_set.negatives == 0:
-        current_node.leaf    = True
+        current_node.is_leaf    = True
         current_node.outcome = True
-        print("Perfectly classified True")
         return
 
     # if no attriubute is left to classify the data we considere
     # the node to be classified with the majorit of outcomes
     if not attribute_list:
-        current_node.leaf = True
+        current_node.is_leaf = True
         current_node.outcome = (current_node.example_set.positives > current_node.example_set.negatives)
-        print("No attribute left")
         return
 
     # if there are no examples left, then use the majority of the parent node
     if not current_node.example_set.examples:
-        print("No examples left")
         parent_node = node_list[current_node.parent_idx]
         if parent_node.example_set.positives == 0 and parent_node.example_set.negatives > 0:
-            current_node.leaf    = True
+            current_node.is_leaf    = True
             current_node.outcome = False
-            print("Classified with False")
             return
 
         if parent_node.example_set.positives > 0 and parent_node.example_set.negatives == 0:
-            current_node.leaf    = True
+            current_node.is_leaf    = True
             current_node.outcome = True
-            print("Classified with True")
             return
 
     # now there is certenly something left to be classified
@@ -348,33 +348,61 @@ def TDIDT(node_list,attribute_list,current_node_idx):
     splitting_test       = None
     for attribute in attribute_list:
         information_gain , test = current_node.example_set.get_split(attribute)
+        #print("Information gain: {}, Test: {}".format(information_gain,test))
         if max_information_gain is None or information_gain > max_information_gain:
             max_information_gain = information_gain
             splitting_test       = test
+    #print("Maximum Information gain {}, Test {}".format(max_information_gain,splitting_test))
 
     # split the example set with the given test with the maximum information gain
     succeeding_example_set , failing_example_set = current_node.example_set.split(splitting_test)
+    current_node.test = splitting_test
 
     # remove the attribute from the list of possible attributes
     next_attribute_list = copy.deepcopy(attribute_list)
-    next_attribute_list.remove(test.attribute)
-    print("Split with attribute: {}".format(test.attribute))
+    next_attribute_list.remove(splitting_test.attribute)
+    #print(next_attribute_list)
 
     # make decision tree nodes for each new example set
     left_node = TDIDTNode(succeeding_example_set,current_node_idx)
     right_node = TDIDTNode(failing_example_set,current_node_idx)
 
-    left_node_idx = len(node_list)
-    right_node_idx = len(node_list)+1
+    current_node.left_child_idx = len(node_list)
+    current_node.right_child_idx = len(node_list)+1
     node_list.append(left_node)
     node_list.append(right_node)
 
     # and invoke TDIDT on each node
-    TDIDT(node_list,next_attribute_list,left_node_idx)
-    TDIDT(node_list,next_attribute_list,right_node_idx)
+    TDIDT(node_list,next_attribute_list,current_node.left_child_idx)
+    TDIDT(node_list,next_attribute_list,current_node.right_child_idx)
+
+def classify(example,node_list):
+    current_node = node_list[0]
+    while not current_node.is_leaf:
+        if current_node.test(example):
+            current_node = node_list[current_node.left_child_idx]
+        else:
+            current_node = node_list[current_node.right_child_idx]
+    return current_node.outcome
 
 e = ExampleSet()
 e.initialize_from_file(sys.argv[1])
+test_set = e.get_test_instances(int((float(2)/3)*len(e.examples)))
+
 node_list = [TDIDTNode(e)]
 attribute_list = list(e.attributes.keys())
 TDIDT(node_list,attribute_list,0)
+
+
+correct_classified = 0
+wrong_classified = 0
+
+for example in test_set.examples:
+    if classify(example,node_list) == example.outcome:
+        print("Correct!")
+        correct_classified += 1
+    else:
+        print("Wrong...")
+        wrong_classified += 1
+
+print("Rate: {}".format(wrong_classified/float(len(test_set.examples))))
