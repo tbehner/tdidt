@@ -75,10 +75,10 @@ def entropy(p,n):
     :type  n: float
     """
     if n == 0:
-        return p*math.log2(1.0/p)
+        return p*math.log(1.0/p, 2)
     elif p == 0:
-        return n*math.log2(1.0/n)
-    return p*math.log2(1.0/p) + n*math.log2(1.0/n)
+        return n*math.log(1.0/n, 2)
+    return p*math.log(1.0/p, 2) + n*math.log(1.0/n, 2)
 
 class ExampleSet:
     """
