@@ -105,7 +105,6 @@ class ExampleSet:
         #  and parse this line into attribute name and type
         # FIXME this line should be easier to code, right?
         self.attributes = { x[0] : x[1] for x in list(map(lambda s : [s[0],s.rstrip()[-1]], init_line.split(',')))[0:-1]}
-        print(self.attributes)
 
         # parse the rest of the file containing the examples
         self.examples = []
@@ -115,7 +114,7 @@ class ExampleSet:
            example_list = list(map(lambda s : s.rstrip() , line.split(',')))
             # FIXME IOOUUUUU there has to be a way which is prettier than this
            example_hash = dict(zip(sorted(self.attributes),example_list))
-           for key in example_hash.keys(): 
+           for key in example_hash.keys():
                if self.attributes[key] == 'n':# convert all numerical values from str to float
                    example_hash[key] = float(example_hash[key])
                elif self.attributes[key] == 'b': # and all boolean values from str to boolean
