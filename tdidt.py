@@ -311,7 +311,7 @@ class TDIDTNode:
     def setLeftChild(self,idx):
         self.left_child_idx = idx
 
-    def setLeftChild(self,idx):
+    def setRightChild(self,idx):
         self.right_child_idx = idx
 
     def __str__(self):
